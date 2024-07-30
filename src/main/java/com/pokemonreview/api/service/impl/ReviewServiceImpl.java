@@ -2,6 +2,7 @@ package com.pokemonreview.api.service.impl;
 
 import com.pokemonreview.api.dto.ReviewDto;
 import com.pokemonreview.api.exceptions.PokemonNotFoundException;
+import com.pokemonreview.api.exceptions.ReviewNotFoundException;
 import com.pokemonreview.api.models.Pokemon;
 import com.pokemonreview.api.models.Review;
 import com.pokemonreview.api.repository.PokemonRepository;
@@ -42,6 +43,50 @@ public class ReviewServiceImpl implements ReviewService {
         List<Review> reviews = reviewRepository.findByPokemonId(pokemonId);
 
         return reviews.stream().map(review -> mapToDto(review)).collect(Collectors.toList());
+    }
+
+    @Override
+    public ReviewDto getReviewById(int reviewId, int pokemonId) {
+        Pokemon pokemon = pokemonRepository.findById(pokemonId).orElseThrow(() -> new PokemonNotFoundException("Pokemon with associated review not found"));
+
+        Review review = reviewRepository.findById(reviewId).orElseThrow(() -> new ReviewNotFoundException("Review not found"));
+
+        if (review.getPokemon().getId() != pokemon.getId()) {
+            throw new ReviewNotFoundException("This review does belong to a pokemon");
+        }
+
+        return mapToDto(review);
+    }
+
+    @Override
+    public ReviewDto updateReview(int reviewId, int pokemonId, ReviewDto reviewDto) {
+        Pokemon pokemon = pokemonRepository.findById(pokemonId).orElseThrow(() -> new PokemonNotFoundException("Pokemon with associated review not found"));
+
+        Review review = reviewRepository.findById(reviewId).orElseThrow(() -> new ReviewNotFoundException("Review not found"));
+
+        if (review.getPokemon().getId() != pokemon.getId()) {
+            throw new ReviewNotFoundException("This review does belong to a pokemon");
+        }
+
+        review.setTitle(reviewDto.getTitle());
+        review.setContent(reviewDto.getContent());
+        review.setStars(reviewDto.getStars());
+
+        Review updatedReview = reviewRepository.save(review);
+
+        return mapToDto(updatedReview);
+    }
+
+    @Override
+    public void deleteReview(int pokemonId, int reviewId) {
+        Pokemon pokemon = pokemonRepository.findById(pokemonId).orElseThrow(() -> new PokemonNotFoundException("Pokemon with associated review not found"));
+
+        Review review = reviewRepository.findById(reviewId).orElseThrow(() -> new ReviewNotFoundException("Review not found"));
+        if (review.getPokemon().getId() != pokemon.getId()) {
+            throw new ReviewNotFoundException("This review does belong to a pokemon");
+        }
+
+        reviewRepository.delete(review);
     }
 
 
